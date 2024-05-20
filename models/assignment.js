@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize')
 
-const sequelize = require('../sequelize')
+const sequelize = require('../lib/sequelize')
 const Course = require('./course')
 
 const Assignment = sequelize.define('assignment', {
