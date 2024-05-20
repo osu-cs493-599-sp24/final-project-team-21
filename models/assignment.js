@@ -19,5 +19,16 @@ const Assignment = sequelize.define('assignment', {
 Course.hasMany(Assignment, { foreignKey: 'courseId' });
 Assignment.belongsTo(Course, { foreignKey: 'courseId' });
 
+/*
+ * Export an array containing the names of fields the client is allowed to set
+ * on assignments
+ */
+exports.AssignmentClientFields = [
+    'courseId',
+    'title',
+    'points',
+    'due'
+]
+
 
 exports.Assignment = Assignment
