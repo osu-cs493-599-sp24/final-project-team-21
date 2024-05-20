@@ -1,10 +1,10 @@
 const { DataTypes } = require('sequelize')
 
 const sequelize = require('../lib/sequelize')
-const Course = require('./course')
+const { Course } = require('./course')
 
 const Assignment = sequelize.define('assignment', {
-    courseid: { 
+    courseId: { 
         type: DataTypes.INTEGER, 
         allowNull: false, references: {
         model: Course,
@@ -16,8 +16,8 @@ const Assignment = sequelize.define('assignment', {
     due: { type: DataTypes.DATE, allowNull: false },
 });
 
-Course.hasMany(Assignment, { foreignKey: 'courseid' });
-Assignment.belongsTo(Course, { foreignKey: 'courseid' });
+Course.hasMany(Assignment, { foreignKey: 'courseId' });
+Assignment.belongsTo(Course, { foreignKey: 'courseId' });
 
 
-module.exports = Assignment
+exports.Assignment = Assignment
