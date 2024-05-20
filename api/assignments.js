@@ -50,5 +50,24 @@ router.patch('/:assignmentId', async function (req, res, next) {
     }
 })
 
+router.delete('/:assignmentId', async function (req, res, next) {
+    const assignmentId = req.params.assignmentId
+    try {
+        const result = await Assignment.destroy({
+            where: {
+                id: assignmentId
+            }
+        })
+
+        if (result) {
+            res.status(204).send()
+        } else {
+            next()
+        }
+    } catch (e) {
+        next(e)
+    }
+})
+
 
 module.exports = router
