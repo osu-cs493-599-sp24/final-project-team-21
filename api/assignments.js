@@ -31,5 +31,24 @@ router.get('/:assignmentId', async function (req, res, next) {
     }
 })
 
+router.patch('/:assignmentId', async function (req, res, next) {
+    const assignmentId = req.params.assignmentId
+    try {
+        const assignment = await Assignment.update(req.body, {
+            where: {
+                id: assignmentId
+            }
+        })
+
+        if (assignment[0] > 0) {
+            res.status(204).send()
+        } else {
+            next()
+        }
+    } catch (e) {
+        next(e)
+    }
+})
+
 
 module.exports = router
