@@ -14,6 +14,9 @@ const Course = sequelize.define("course", {
 Course.hasMany(Assignment, { foreignKey: {allowNull: false} });
 Assignment.belongsTo(Course);
 
+Course.hasMany(User, {foreignKey: {allowNull: false}})
+User.belongsToMany(Course)
+
 exports.Course = Course;
 exports.CourseClientFields = [
   "subject",
