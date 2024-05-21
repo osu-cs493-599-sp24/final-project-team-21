@@ -11,9 +11,6 @@ const Course = sequelize.define("course", {
   instructorId: { type: DataTypes.INTEGER, allowNull: false },
 });
 
-Course.hasMany(User, {foreignKey: {allowNull: false}})
-User.belongsToMany(Course)
-
 Course.hasMany(Assignment, { foreignKey: {allowNull: false} });
 Assignment.belongsTo(Course);
 
