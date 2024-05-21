@@ -9,19 +9,25 @@ const router = Router();
  * Routes below.
  */
 
-//Create a new course
+// Create a new course
+// TODO: Add auth, only admin can create new courses
 router.post("/", async (req, res) => {
   try {
-    console.log(req.body);
+    console.log("-- ", req.body);
+    // TODO: Data validation for request body, maybe this is not needed
     const course = await Course.create(req.body, CourseClientFields);
-    res.status(201).send(course);
+    res.status(201).send({ id: course.id });
   } catch (e) {
-    console.log("error", e);
-    next(e);
+    if (e instanceof ValidationError) {
+      res.status(400).send({ error: e.message })
+    } else {
+      next(e);
+    }
+    // TODO: Handle response code and message for failed auth
   }
 });
 
-//fetch a list of all courses
+// Fetch a list of all courses
 router.get("/", async (req, res, next) => {
   /*
    * Compute page number based on optional query string parameter `page`.
@@ -68,7 +74,7 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-//fetch data about a specific course:
+// Fetch data about a specific course:
 router.get("/:courseId", async (req, res, next) => {
   const courseId = req.params.courseId;
   try {
@@ -83,49 +89,58 @@ router.get("/:courseId", async (req, res, next) => {
   }
 });
 
-//update data for a specific course
+// Update data for a specific course
 router.patch("/:courseId", async (req, res, next) => {
   const courseId = req.params.courseId;
   try {
     const course = await Course.findByPk(courseId);
-    res.status(403).send({
-      error: "Not authorized to access the specified resource",
-    });
 
-    const result = await Course.update(req.body, {
-      where: { id: courseId },
-      fields: CourseClientFields,
-    });
-    if (result[0] > 0) {
-      res.status(204).send();
+    if (!req.admin && Number(req.user) !== Number(course.instructorId)) {
+      res.status(403).send({
+        error: "Not authorized to access the specified resource",
+      });
     } else {
-      next();
+      const result = await Course.update(req.body, {
+        where: { id: courseId },
+        fields: CourseClientFields,
+      });
+      if (result[0] > 0) {
+        res.status(200).send();
+      } else {
+        next();
+      }
     }
   } catch (e) {
-    next(e);
+    if (e instanceof ValidationError) {
+      res.status(400).send({ error: e.message })
+    } else {
+      next(e);
+    }
   }
 });
 
-//removes a course
+// Removes a course
 router.delete("/:courseId", async (req, res, next) => {
-  const courseId = req.params.courseId;
-
+  const courseId = req.params.courseId
+  
   try {
     const course = await Course.findByPk(courseId);
 
-    res.status(403).send({
-      error: "Not authorized to access the specified resource",
-    });
-
-    const result = await Business.destroy({ where: { id: courseId } });
-    if (result > 0) {
-      res.status(204).send();
+    if (!req.admin && Number(req.user) !== Number(course.instructorId)) {
+      res.status(403).send({
+        error: "Not authorized to access the specified resource",
+      });
     } else {
-      next();
+      const result = await Business.destroy({ where: { id: courseId } });
+      if (result > 0) {
+        res.status(204).send();
+      } else {
+        next();
+      }
     }
   } catch (e) {
     next(e);
   }
-});
+})
 
 module.exports = router;
