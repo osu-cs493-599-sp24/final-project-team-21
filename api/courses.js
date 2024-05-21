@@ -13,7 +13,7 @@ const router = Router();
 router.post("/", async (req, res) => {
   try {
     console.log(req.body);
-    const course = await Course.create(req.body);
+    const course = await Course.create(req.body, CourseClientFields);
     res.status(201).send(course);
   } catch (e) {
     console.log("error", e);
@@ -88,21 +88,18 @@ router.patch("/:courseId", async (req, res, next) => {
   const courseId = req.params.courseId;
   try {
     const course = await Course.findByPk(courseId);
+    res.status(403).send({
+      error: "Not authorized to access the specified resource",
+    });
 
-    if (!req.admin && Number(req.user) !== Number(course.instructorId)) {
-      res.status(403).send({
-        error: "Not authorized to access the specified resource",
-      });
+    const result = await Course.update(req.body, {
+      where: { id: courseId },
+      fields: CourseClientFields,
+    });
+    if (result[0] > 0) {
+      res.status(204).send();
     } else {
-      const result = await Course.update(req.body, {
-        where: { id: courseId },
-        fields: CourseClientFields,
-      });
-      if (result[0] > 0) {
-        res.status(204).send();
-      } else {
-        next();
-      }
+      next();
     }
   } catch (e) {
     next(e);
@@ -111,27 +108,24 @@ router.patch("/:courseId", async (req, res, next) => {
 
 //removes a course
 router.delete("/:courseId", async (req, res, next) => {
-    const courseId = req.params.courseId
-    
-    try {
-        const course = await Course.findByPk(courseId);
-    
-        if (!req.admin && Number(req.user) !== Number(course.instructorId)) {
-          res.status(403).send({
-            error: "Not authorized to access the specified resource",
-          });
-        } else {
-          const result = await Business.destroy({ where: { id: courseId } });
-          if (result > 0) {
-            res.status(204).send();
-          } else {
-            next();
-          }
-        }
-      } catch (e) {
-        next(e);
-      }
-})
+  const courseId = req.params.courseId;
 
+  try {
+    const course = await Course.findByPk(courseId);
+
+    res.status(403).send({
+      error: "Not authorized to access the specified resource",
+    });
+
+    const result = await Business.destroy({ where: { id: courseId } });
+    if (result > 0) {
+      res.status(204).send();
+    } else {
+      next();
+    }
+  } catch (e) {
+    next(e);
+  }
+});
 
 module.exports = router;
