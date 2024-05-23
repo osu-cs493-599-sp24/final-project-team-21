@@ -1,6 +1,8 @@
 const { Router } = require('express')
 const { ValidationError } = require('sequelize')
 const { Assignment, AssignmentClientFields } = require('../models/assignment')
+const { Submission, SubmissionClientFields } = require('../models/submission')
+const { upload } = require('../lib/multer')
 
 const router = Router()
 
@@ -63,7 +65,6 @@ router.patch('/:assignmentId', async function (req, res, next) {
 
 /*
  * Route to delete a assignment
- 
  */
 router.delete('/:assignmentId', async function (req, res, next) {
     const assignmentId = req.params.assignmentId
@@ -81,6 +82,46 @@ router.delete('/:assignmentId', async function (req, res, next) {
         }
     } catch (e) {
         next(e)
+    }
+})
+
+/*
+ * Route to fetch all submissions for a given assignment
+ */
+router.get('/:assignmentId/submissions', async function (req, res, next) {
+    const assignmentId = req.params.assignmentId
+    try {
+        const submissions = await Submission.findAll({
+            where: {
+                assignmentId: assignmentId
+            }
+        })
+        res.status(200).send(submissions)
+    } catch (e) {
+        next(e)
+    }
+})
+
+/*
+ * Route to create a new submission for an assignment
+ */
+router.post(
+    '/:assignmentId/submissions', 
+    upload.single('file'),
+    async function (req, res, next) {
+        console.log("== req.file:", req.file)
+        console.log("== req.body:", req.body)
+    if (req.file) {
+        const filepath = `/media/submissions/${req.file.filename}` 
+        const submission = await Submission.create({...req.body, file: filepath}, SubmissionClientFields)
+        
+        res.status(201).send({
+            id: submission.id,
+        })
+    } else {
+        res.status(400).send({
+            error: "Invalid file type"
+        })
     }
 })
 
