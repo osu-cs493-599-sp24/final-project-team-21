@@ -72,6 +72,9 @@ app.use(express.json())
 
 app.use(rateLimit)
 
+// Serves static submission files
+app.use('/media/submissions', express.static(`${__dirname}/lib/uploads`));
+
 /*
  * All routes for the API are written in modules in the api/ directory.  The
  * top-level router lives in api/index.js.  That's what we include here, and
