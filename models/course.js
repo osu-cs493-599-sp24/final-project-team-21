@@ -11,11 +11,12 @@ const Course = sequelize.define("course", {
   instructorId: { type: DataTypes.INTEGER, allowNull: false },
 });
 
-Course.hasMany(Assignment, { foreignKey: {allowNull: false} });
-Assignment.belongsTo(Course);
 
-Course.hasMany(User, {foreignKey: {allowNull: false}})
-User.belongsToMany(Course)
+// Defines a join table for M:M association 
+const UserCourse = sequelize.define('UserCourse', {});
+
+Course.belongsToMany(User, { through: UserCourse, foreignKey: { allowNull: false } });
+User.belongsToMany(Course, { through: UserCourse });
 
 exports.Course = Course;
 exports.CourseClientFields = [

@@ -4,14 +4,14 @@ const sequelize = require("../lib/sequelize");
 
 const Submission = sequelize.define("submission", {
     timestamp: {type: DataTypes.DATE, allowNull: false},
-    grade: {type: DataTypes.FLOAT, allowNull: false},
+    grade: {type: DataTypes.FLOAT, allowNull: true, defaultValue: null},
     file: {type: DataTypes.STRING, allowNull: false}
 });
 
 exports.Submission = Submission
 exports.UserClientFields = [
-    "userId",
     "assignmentId",
+    "userId",
     "timestamp",
     "grade",
     "file"
