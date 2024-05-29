@@ -73,6 +73,10 @@ app.use(express.json())
 app.use(rateLimit)
 
 // Serves static submission files
+/*
+ TODO: Limit downloading to an authenticated User with 'admin' role or an authenticated 'instructor' User 
+ whose ID matches the instructorId of the associated course
+*/
 app.use('/media/submissions', express.static(`${__dirname}/lib/uploads`));
 
 /*

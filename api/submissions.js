@@ -6,6 +6,8 @@ const router = Router()
 
 /*
  * Route to update data for a specific submission
+ TODO: Limit patching to an authenticated User with 'admin' role or an authenticated 'instructor' User 
+ whose ID matches the instructorId of the associated course
 */
 router.patch('/:submissionId', async function (req, res, next) {
     const submissionId = req.params.submissionId
