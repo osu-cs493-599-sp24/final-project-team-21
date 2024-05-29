@@ -123,7 +123,6 @@ router.get('/:assignmentId/submissions', async function (req, res, next) {
             res.status(404).send({
                 error: "No submissions found using provided id"
             })
-            return
         }
 
         /*
