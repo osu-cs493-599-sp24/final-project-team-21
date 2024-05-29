@@ -131,12 +131,12 @@ router.get('/:assignmentId/submissions', async function (req, res, next) {
         const lastPage = Math.ceil(submissions.count / numPerPage);
         const links = {};
         if (page < lastPage) {
-        links.nextPage = `/assignments/${assignmentId}/submissions?page=${page + 1}`;
-        links.lastPage = `/assignments/${assignmentId}/submissions?page=${lastPage}`;
+            links.nextPage = `/assignments/${assignmentId}/submissions?page=${page + 1}`;
+            links.lastPage = `/assignments/${assignmentId}/submissions?page=${lastPage}`;
         }
         if (page > 1) {
-        links.prevPage = `/assignments/${assignmentId}/submissions?page=${page - 1}`;
-        links.firstPage = `/assignments/${assignmentId}/submissions?page=1`;
+            links.prevPage = `/assignments/${assignmentId}/submissions?page=${page - 1}`;
+            links.firstPage = `/assignments/${assignmentId}/submissions?page=1`;
         }
 
         /*
@@ -175,9 +175,9 @@ router.post(
             const { grade, ...otherFields } = req.body;
             const submission = await Submission.create({...otherFields, file: filepath}, SubmissionClientFields)
        
-        res.status(201).send({
-            id: submission.id,
-        })
+            res.status(201).send({
+                id: submission.id,
+            })
         } catch (e) {
             if (e instanceof ValidationError) {
                 res.status(400).send({ error: e.message })
