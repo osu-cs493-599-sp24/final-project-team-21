@@ -17,7 +17,7 @@ router.patch('/:submissionId', async function (req, res, next) {
             fields: SubmissionClientFields
         })
 
-        if (submission) {
+        if (submission[0] > 0) {
             res.status(204).send()
         } else {
             next()
