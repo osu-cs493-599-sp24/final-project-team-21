@@ -143,4 +143,22 @@ router.delete("/:courseId", async (req, res, next) => {
   }
 })
 
+//Get student roster for a course
+router.get('/:courseId/students', async function (req, res, next) {
+})
+
+//Update enrollment for a course
+router.post("/:courseId/students", async function (req, res, next) {
+
+})
+
+//Fetch a CSV file containing list of the students enrolled in the Course
+router.get("/:courseId/roster", async function (req, res, next) {
+
+})
+
+//Fetch a list of the Assignments for the Course.
+router.get("/:courseId/assignments", async function (req, res, next) {
+  
+})
 module.exports = router;
