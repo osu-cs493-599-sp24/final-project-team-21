@@ -3,6 +3,7 @@ const { ValidationError } = require("sequelize");
 
 const { Course, CourseClientFields } = require("../models/course");
 const { User } = require('../models/user')
+const { Assignment } = require('../models/assignment')
 
 const router = Router();
 
@@ -202,6 +203,23 @@ router.get("/:courseId/roster", async function (req, res, next) {
 
 //Fetch a list of the Assignments for the Course.
 router.get("/:courseId/assignments", async function (req, res, next) {
-  
+  const courseId = req.params.courseId
+
+  try {
+    const course = await Course.findByPk(courseId)
+    
+    if (!course) {
+      res.status(404).send({error: "Course Not Found"})
+    }
+
+    // Fetch assignments associated with the course
+    const assignments = await Assignment.findAll({
+      where: { courseId: courseId }
+    });
+
+    res.status(200).send(assignments)
+  } catch (error) {
+    next(error)
+  }
 })
 module.exports = router;
