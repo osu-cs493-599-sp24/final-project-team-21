@@ -2,6 +2,7 @@ const { Router } = require("express");
 const { ValidationError } = require("sequelize");
 
 const { Course, CourseClientFields } = require("../models/course");
+const { User } = require('../models/user')
 
 const router = Router();
 
@@ -145,6 +146,27 @@ router.delete("/:courseId", async (req, res, next) => {
 
 //Get student roster for a course
 router.get('/:courseId/students', async function (req, res, next) {
+  const courseId = req.params.courseId
+
+  try {
+    const course = await Course.findByPk(courseId)
+
+    if (!course) {
+      res.status(404).send({error: "Course Not Found"})
+    }
+
+    const students = await User.findAll({
+      include: [{
+        model: Course,
+        where: { id: courseId }
+      }],
+      where: { role: 'student' }
+    })
+
+    res.status(200).send(students)
+  } catch (error) {
+    next(error)
+  }
 })
 
 //Update enrollment for a course
