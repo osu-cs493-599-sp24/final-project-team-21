@@ -164,6 +164,7 @@ router.get("/:courseId/roster", async function (req, res, next) {
 router.get("/:courseId/assignments", async function (req, res, next) {
   const courseId = req.params.courseId
 
+  //TODO: Implement user authentication
   try {
     const course = await Course.findByPk(courseId)
     
