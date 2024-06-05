@@ -147,53 +147,12 @@ router.delete("/:courseId", async (req, res, next) => {
 
 //Get student roster for a course
 router.get('/:courseId/students', async function (req, res, next) {
-  const courseId = req.params.courseId
 
-  try {
-    const course = await Course.findByPk(courseId)
-
-    if (!course) {
-      res.status(404).send({error: "Course Not Found"})
-    }
-
-    const students = await User.findAll({
-      include: [{
-        model: Course,
-        where: { id: courseId }
-      }],
-      where: { role: 'student' }
-    })
-
-    res.status(200).send(students)
-  } catch (error) {
-    next(error)
-  }
 })
 
 //Update enrollment for a course
 router.post("/:courseId/students", async function (req, res, next) {
-  const courseId = req.params.courseId
-  const { add, remove } = req.body
 
-  try {
-    const course = await Course.findByPk(courseId)
-
-    if (!course) {
-      res.status(404).send({error: "Course Not Found"})
-    }
-
-    if (add && add.length > 0) {
-      await Promise.all(add.map(userId => course.addUser(userId)))
-    }
-
-    if (remove && remove > 0) {
-      await Promise.all(add.map(userId => course.removeUser(userId)))
-    }
-    
-    res.status(204).send()
-  } catch (error) {
-    next(error)
-  }
 })
 
 //Fetch a CSV file containing list of the students enrolled in the Course
