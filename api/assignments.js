@@ -3,19 +3,28 @@ const { ValidationError } = require('sequelize')
 const { Assignment, AssignmentClientFields } = require('../models/assignment')
 const { Submission, SubmissionClientFields } = require('../models/submission')
 const { upload } = require('../lib/multer')
+const { requireAuthentication } = require('../lib/auth')
+const { Course } = require('../models/course')
 
 const router = Router()
 
 /*
  * Route to create a new assignment
-    TODO: Limit creation to an authenticated User with 'admin' role or an authenticated 'instructor' User 
-    whose ID matches the instructorId of the Course corresponding to the Assignment's courseId can create an Assignment.
  */
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuthentication, async (req, res, next) => {
     try {
-        console.log(req.body)
-        const assignment = await Assignment.create(req.body, AssignmentClientFields)
-        res.status(201).send(assignment)
+        const courseId = req.body.courseId
+        const course = await Course.findByPk(courseId)
+
+        // Only allows creation if the authenticated user is the instructor of the course, or an Admin
+        if (course && course.instructorId == req.user || req.admin) {
+            const assignment = await Assignment.create(req.body, AssignmentClientFields)
+            res.status(201).send(assignment)
+        } else {
+            res.status(403).send({
+                error: "Not authorized to create an assignment for the requested course"
+            })
+        }
     } catch (e) {
         if (e instanceof ValidationError) {
           res.status(400).send({ error: e.message })
@@ -44,23 +53,31 @@ router.get('/:assignmentId', async function (req, res, next) {
 
 /*
  * Route to update data for a assignment
-    TODO: Limit patching to an authenticated User with 'admin' role or an authenticated 'instructor' User 
-    whose ID matches the instructorId of the Course corresponding to the Assignment's courseId
  */
-router.patch('/:assignmentId', async function (req, res, next) {
+router.patch('/:assignmentId', requireAuthentication, async function (req, res, next) {
     const assignmentId = req.params.assignmentId
-    try {
-        const assignment = await Assignment.update(req.body, {
-            where: {
-                id: assignmentId
-            },
-            fields: AssignmentClientFields
-        })
+    const courseId = req.body.courseId
+    const course = await Course.findByPk(courseId)
 
-        if (assignment[0] > 0) {
-            res.status(204).send()
+    try {
+        // Only allows patching if the authenticated user is the instructor of the course, or an Admin
+        if (course && course.instructorId == req.user || req.admin) {
+            const assignment = await Assignment.update(req.body, {
+                where: {
+                    id: assignmentId
+                },
+                fields: AssignmentClientFields
+            })
+
+            if (assignment[0] > 0) {
+                res.status(204).send()
+            } else {
+                next()
+            }
         } else {
-            next()
+            res.status(403).send({
+                error: "Not authorized to update an assignment for the requested course"
+            })
         }
     } catch (e) {
         next(e)
@@ -72,19 +89,30 @@ router.patch('/:assignmentId', async function (req, res, next) {
     TODO: Limit deleting to an authenticated User with 'admin' role or an authenticated 'instructor' User 
     whose ID matches the instructorId of the Course corresponding to the Assignment's courseId
  */
-router.delete('/:assignmentId', async function (req, res, next) {
+router.delete('/:assignmentId', requireAuthentication, async function (req, res, next) {
     const assignmentId = req.params.assignmentId
-    try {
-        const result = await Assignment.destroy({
-            where: {
-                id: assignmentId
-            }
-        })
+    const assignment = await Assignment.findByPk(assignmentId,
+        { include: Course }
+    )
+    const course = assignment.course
 
-        if (result) {
-            res.status(204).send()
+    try {
+        if (course && course.instructorId == req.user || req.admin) {
+            const result = await Assignment.destroy({
+                where: {
+                    id: assignmentId
+                }
+            })
+
+            if (result) {
+                res.status(204).send()
+            } else {
+                next()
+            }
         } else {
-            next()
+            res.status(403).send({
+                error: "Not authorized to delete an assignment for the requested course"
+            })
         }
     } catch (e) {
         next(e)
