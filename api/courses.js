@@ -2,6 +2,8 @@ const { Router } = require("express");
 const { ValidationError } = require("sequelize");
 
 const { Course, CourseClientFields } = require("../models/course");
+const { User } = require('../models/user')
+const { Assignment } = require('../models/assignment')
 
 const router = Router();
 
@@ -143,4 +145,41 @@ router.delete("/:courseId", async (req, res, next) => {
   }
 })
 
+//Get student roster for a course
+router.get('/:courseId/students', async function (req, res, next) {
+
+})
+
+//Update enrollment for a course
+router.post("/:courseId/students", async function (req, res, next) {
+
+})
+
+//Fetch a CSV file containing list of the students enrolled in the Course
+router.get("/:courseId/roster", async function (req, res, next) {
+
+})
+
+//Fetch a list of the Assignments for the Course.
+router.get("/:courseId/assignments", async function (req, res, next) {
+  const courseId = req.params.courseId
+
+  //TODO: Implement user authentication
+  try {
+    const course = await Course.findByPk(courseId)
+    
+    if (!course) {
+      res.status(404).send({error: "Course Not Found"})
+    }
+
+    // Fetch assignments associated with the course
+    const assignments = await Assignment.findAll({
+      where: { courseId: courseId }
+    });
+
+    res.status(200).send({assignments: assignments})
+  } catch (error) {
+    next(error)
+  }
+})
 module.exports = router;
