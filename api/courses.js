@@ -177,7 +177,12 @@ router.get("/:courseId/assignments", async function (req, res, next) {
       where: { courseId: courseId }
     });
 
-    res.status(200).send(assignments)
+    res.status(200).send(assignments.map(assignment => ({
+      courseId: assignment.courseId,
+      title: assignment.title,
+      points: assignment.points,
+      due: assignment.due
+    })))
   } catch (error) {
     next(error)
   }
