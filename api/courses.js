@@ -3,7 +3,8 @@ const { ValidationError } = require("sequelize");
 
 const { Course, CourseClientFields } = require("../models/course");
 const { User } = require('../models/user')
-const { Assignment } = require('../models/assignment')
+const { Assignment } = require('../models/assignment');
+const e = require("express");
 
 const router = Router();
 
@@ -147,12 +148,70 @@ router.delete("/:courseId", async (req, res, next) => {
 
 //Get student roster for a course
 router.get('/:courseId/students', async function (req, res, next) {
+  const courseId = req.params.courseId
 
+  try{
+    const course = await Course.findByPk(courseId, {
+      include: {
+        model: User,
+        attributes: ['name', 'email', 'password', 'role'],
+        through: {attributes: []},
+        where: { role: 'student' }
+      }
+    })
+
+    if (!course) {
+      res.status(404).send({error: "Course Not Found"})
+    }
+
+    const students = course.Users
+
+    res.status(200).send({students: students})
+  }catch(err) {
+    next(err)
+  }
 })
 
 //Update enrollment for a course
 router.post("/:courseId/students", async function (req, res, next) {
+  const courseId = req.params.courseId
+  const { add, remove } = req.body
 
+  try {
+    const course = await Course.findByPk(courseId);
+
+    if (!course) {
+      res.status(404).send({error: "Course Not Found"})
+    }
+
+    //Add users to course
+    if ( add && Array.isArray(add)){
+      await Promise.all(add.map(async userId => {
+        const user = await User.findByPk(userId)
+        if (user) {
+          await course.addUser(user)
+        } else {
+          console.error(`User with ID ${userId} not found.`);
+        }
+      }))
+    }
+
+    //remove users from course
+    if( remove && Array.isArray(remove)) {
+      await Promise.all(remove.map(async userId => {
+        const user = await User.findByPk(userId);
+        if (user) {
+          await course.removeUser(user);
+        } else {
+          console.error(`User with ID ${userId} not found.`);
+        }
+      }))
+    }
+
+    res.send(204).send()
+  } catch (error) {
+    next(error)
+  }
 })
 
 //Fetch a CSV file containing list of the students enrolled in the Course

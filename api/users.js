@@ -11,15 +11,15 @@ const router = Router()
 /*
  * Routes below.
  */
-router.post("/", checkAdminAuthorization, async (req, res, next) => {
+router.post("/", /*checkAdminAuthorization,*/ async (req, res, next) => {
     try {
-        // Prevent client creating an "admin" or "instructor" user without "admin" authorization
-        if (!req.admin && (req.body.role === "admin" || req.body.role === "instructor")) {
-            res.status(403).send({
-                error: "Not authorized to create a user with the requested role"
-            })
-            return
-        }
+        // // Prevent client creating an "admin" or "instructor" user without "admin" authorization
+        // if (!req.admin && (req.body.role === "admin" || req.body.role === "instructor")) {
+        //     res.status(403).send({
+        //         error: "Not authorized to create a user with the requested role"
+        //     })
+        //     return
+        // }
 
         const user = await User.create(req.body, UserClientFields)
         res.status(201).send({ id: user.id })
