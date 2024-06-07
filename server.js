@@ -10,6 +10,7 @@ const app = express()
 const port = process.env.PORT || 8000
 
 const redis = require('redis')
+const { requireAuthentication } = require('./lib/auth')
 const redisHost = process.env.REDIS_HOST || "localhost"
 const redisPort = process.env.REDIS_PORT || 6379
 
@@ -22,8 +23,14 @@ const rateLimitMaxReqsAuthorized = 30
 const rateLimitWindowMs = 60000
 
 async function rateLimit(req, res, next) {
-  // TODO: Update this function to use Authorization header to determine if user is authorized (When Auth gets implemented)
-  const maxRequests = rateLimitMaxReqsUnauthorized
+  const properAuth = false
+  const authHeader = req.get("Authorization") || ""
+  if (authHeader) {
+    properAuth = await requireAuthentication(req, res)
+  }
+
+  const maxRequests = properAuth ? rateLimitMaxReqsAuthorized : rateLimitMaxReqsUnauthorized
+
   const key = req.ip
 
   let tokenBucket
@@ -73,10 +80,6 @@ app.use(express.json())
 app.use(rateLimit)
 
 // Serves static submission files
-/*
- TODO: Limit downloading to an authenticated User with 'admin' role or an authenticated 'instructor' User 
- whose ID matches the instructorId of the associated course
-*/
 app.use('/media/submissions', express.static(`${__dirname}/lib/uploads`));
 
 /*
