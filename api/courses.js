@@ -2,8 +2,8 @@ const { Router } = require("express");
 const { ValidationError } = require("sequelize");
 
 const { Course, CourseClientFields } = require("../models/course");
-const { User } = require('../models/user')
-const { Assignment } = require('../models/assignment');
+const { User } = require("../models/user");
+const { Assignment } = require("../models/assignment");
 const e = require("express");
 
 const router = Router();
@@ -14,7 +14,7 @@ const router = Router();
 
 // Create a new course
 // TODO: Add auth, only admin can create new courses
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     console.log("-- ", req.body);
     // TODO: Data validation for request body, maybe this is not needed
@@ -22,7 +22,7 @@ router.post("/", async (req, res) => {
     res.status(201).send({ id: course.id });
   } catch (e) {
     if (e instanceof ValidationError) {
-      res.status(400).send({ error: e.message })
+      res.status(400).send({ error: e.message });
     } else {
       next(e);
     }
@@ -115,7 +115,7 @@ router.patch("/:courseId", async (req, res, next) => {
     }
   } catch (e) {
     if (e instanceof ValidationError) {
-      res.status(400).send({ error: e.message })
+      res.status(400).send({ error: e.message });
     } else {
       next(e);
     }
@@ -124,8 +124,8 @@ router.patch("/:courseId", async (req, res, next) => {
 
 // Removes a course
 router.delete("/:courseId", async (req, res, next) => {
-  const courseId = req.params.courseId
-  
+  const courseId = req.params.courseId;
+
   try {
     const course = await Course.findByPk(courseId);
 
@@ -144,101 +144,101 @@ router.delete("/:courseId", async (req, res, next) => {
   } catch (e) {
     next(e);
   }
-})
+});
 
 //Get student roster for a course
-router.get('/:courseId/students', async function (req, res, next) {
-  const courseId = req.params.courseId
+router.get("/:courseId/students", async function (req, res, next) {
+  const courseId = req.params.courseId;
 
-  try{
+  try {
     const course = await Course.findByPk(courseId, {
       include: {
         model: User,
-        attributes: ['name', 'email', 'password', 'role'],
-        through: {attributes: []},
-        where: { role: 'student' }
+        where: { role: "student" }
       }
-    })
+    });
 
     if (!course) {
-      res.status(404).send({error: "Course Not Found"})
+      res.status(404).send({ error: "Course Not Found" });
     }
 
-    const students = course.Users
+    const students = course.Users;
 
-    res.status(200).send({students: students})
-  }catch(err) {
-    next(err)
+    res.status(200).send({ students: students });
+  } catch (err) {
+    next(err);
   }
-})
+});
 
 //Update enrollment for a course
 router.post("/:courseId/students", async function (req, res, next) {
-  const courseId = req.params.courseId
-  const { add, remove } = req.body
+  const courseId = req.params.courseId;
+  const { add, remove } = req.body;
 
   try {
     const course = await Course.findByPk(courseId);
 
     if (!course) {
-      res.status(404).send({error: "Course Not Found"})
+      res.status(404).send({ error: "Course Not Found" });
     }
 
     //Add users to course
-    if ( add && Array.isArray(add)){
-      await Promise.all(add.map(async userId => {
-        const user = await User.findByPk(userId)
-        if (user) {
-          await course.addUser(user)
-        } else {
-          console.error(`User with ID ${userId} not found.`);
-        }
-      }))
+    if (add && Array.isArray(add)) {
+      await Promise.all(
+        add.map(async (userId) => {
+          const user = await User.findByPk(userId);
+          if (user) {
+            await course.addUser(user);
+          } else {
+            console.error(`User with ID ${userId} not found.`);
+          }
+        })
+      );
     }
 
     //remove users from course
-    if( remove && Array.isArray(remove)) {
-      await Promise.all(remove.map(async userId => {
-        const user = await User.findByPk(userId);
-        if (user) {
-          await course.removeUser(user);
-        } else {
-          console.error(`User with ID ${userId} not found.`);
-        }
-      }))
+    if (remove && Array.isArray(remove)) {
+      await Promise.all(
+        remove.map(async (userId) => {
+          const user = await User.findByPk(userId);
+          if (user) {
+            await course.removeUser(user);
+          } else {
+            console.error(`User with ID ${userId} not found.`);
+          }
+        })
+      );
     }
 
-    res.send(204).send()
+    res.send(204).send();
   } catch (error) {
-    next(error)
+    next(error);
   }
-})
+});
 
 //Fetch a CSV file containing list of the students enrolled in the Course
-router.get("/:courseId/roster", async function (req, res, next) {
-
-})
+router.get("/:courseId/roster", async function (req, res, next) {});
 
 //Fetch a list of the Assignments for the Course.
 router.get("/:courseId/assignments", async function (req, res, next) {
-  const courseId = req.params.courseId
+  const courseId = req.params.courseId;
 
   //TODO: Implement user authentication
   try {
-    const course = await Course.findByPk(courseId)
-    
+    const course = await Course.findByPk(courseId);
+
     if (!course) {
-      res.status(404).send({error: "Course Not Found"})
+      res.status(404).send({ error: "Course Not Found" });
     }
 
     // Fetch assignments associated with the course
     const assignments = await Assignment.findAll({
-      where: { courseId: courseId }
+      where: { courseId: courseId },
     });
 
-    res.status(200).send({assignments: assignments})
+    res.status(200).send({ assignments: assignments });
   } catch (error) {
-    next(error)
+    next(error);
   }
-})
+});
 module.exports = router;
