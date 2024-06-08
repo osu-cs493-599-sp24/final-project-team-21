@@ -63,7 +63,7 @@ router.patch('/:assignmentId', requireAuthentication, async function (req, res, 
         const course = await Course.findByPk(courseId)
 
         // Only allows patching if the authenticated user is the instructor of the course, or an Admin
-        if (course && course.instructorId == req.user || req.admin) {
+        if (course && course.instructorId === req.user || req.admin) {
             const assignment = await Assignment.update(req.body, {
                 where: {
                     id: assignmentId
