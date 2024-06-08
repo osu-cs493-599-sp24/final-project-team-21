@@ -20,7 +20,7 @@ const Assignment = sequelize.define('assignment', {
 Course.hasMany(Assignment, { foreignKey: 'courseId' });
 Assignment.belongsTo(Course, { foreignKey: 'courseId' });
 
-Assignment.hasMany(Submission, {foreignKey: {allowNull: false}})
+Assignment.hasMany(Submission, { foreignKey: { allowNull: false }, onDelete: "CASCADE" })
 Submission.belongsTo(Assignment)
 
 /*

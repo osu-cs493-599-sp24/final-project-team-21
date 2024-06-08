@@ -3,19 +3,30 @@ const { ValidationError } = require('sequelize')
 const { Assignment, AssignmentClientFields } = require('../models/assignment')
 const { Submission, SubmissionClientFields } = require('../models/submission')
 const { upload } = require('../lib/multer')
+const { requireAuthentication } = require('../lib/auth')
+const { Course } = require('../models/course')
+const { User } = require('../models/user')
+const { UserCourse } = require('../models/userCourse')
 
 const router = Router()
 
 /*
  * Route to create a new assignment
-    TODO: Limit creation to an authenticated User with 'admin' role or an authenticated 'instructor' User 
-    whose ID matches the instructorId of the Course corresponding to the Assignment's courseId can create an Assignment.
  */
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuthentication, async (req, res, next) => {
     try {
-        console.log(req.body)
-        const assignment = await Assignment.create(req.body, AssignmentClientFields)
-        res.status(201).send(assignment)
+        const courseId = req.body.courseId
+        const course = await Course.findByPk(courseId)
+
+        // Only allows creation if the authenticated user is the instructor of the course, or an Admin
+        if (course && course.instructorId == req.user || req.admin) {
+            const assignment = await Assignment.create(req.body, AssignmentClientFields)
+            res.status(201).send(assignment)
+        } else {
+            res.status(403).send({
+                error: "Not authorized to create an assignment for the requested course"
+            })
+        }
     } catch (e) {
         if (e instanceof ValidationError) {
           res.status(400).send({ error: e.message })
@@ -44,23 +55,31 @@ router.get('/:assignmentId', async function (req, res, next) {
 
 /*
  * Route to update data for a assignment
-    TODO: Limit patching to an authenticated User with 'admin' role or an authenticated 'instructor' User 
-    whose ID matches the instructorId of the Course corresponding to the Assignment's courseId
  */
-router.patch('/:assignmentId', async function (req, res, next) {
+router.patch('/:assignmentId', requireAuthentication, async function (req, res, next) {
     const assignmentId = req.params.assignmentId
     try {
-        const assignment = await Assignment.update(req.body, {
-            where: {
-                id: assignmentId
-            },
-            fields: AssignmentClientFields
-        })
+        const courseId = req.body.courseId
+        const course = await Course.findByPk(courseId)
 
-        if (assignment[0] > 0) {
-            res.status(204).send()
+        // Only allows patching if the authenticated user is the instructor of the course, or an Admin
+        if (course && course.instructorId == req.user || req.admin) {
+            const assignment = await Assignment.update(req.body, {
+                where: {
+                    id: assignmentId
+                },
+                fields: AssignmentClientFields
+            })
+
+            if (assignment[0] > 0) {
+                res.status(204).send()
+            } else {
+                next()
+            }
         } else {
-            next()
+            res.status(403).send({
+                error: "Not authorized to update an assignment for the requested course"
+            })
         }
     } catch (e) {
         next(e)
@@ -69,22 +88,32 @@ router.patch('/:assignmentId', async function (req, res, next) {
 
 /*
  * Route to delete a assignment
-    TODO: Limit deleting to an authenticated User with 'admin' role or an authenticated 'instructor' User 
-    whose ID matches the instructorId of the Course corresponding to the Assignment's courseId
  */
-router.delete('/:assignmentId', async function (req, res, next) {
+router.delete('/:assignmentId', requireAuthentication, async function (req, res, next) {
     const assignmentId = req.params.assignmentId
-    try {
-        const result = await Assignment.destroy({
-            where: {
-                id: assignmentId
-            }
-        })
 
-        if (result) {
-            res.status(204).send()
+    try {
+        const assignment = await Assignment.findByPk(assignmentId,
+            { include: Course }
+        )
+        const course = assignment.course
+    
+        if (course && course.instructorId == req.user || req.admin) {
+            const result = await Assignment.destroy({
+                where: {
+                    id: assignmentId
+                }
+            })
+
+            if (result) {
+                res.status(204).send()
+            } else {
+                next()
+            }
         } else {
-            next()
+            res.status(403).send({
+                error: "Not authorized to delete an assignment for the requested course"
+            })
         }
     } catch (e) {
         next(e)
@@ -93,10 +122,8 @@ router.delete('/:assignmentId', async function (req, res, next) {
 
 /*
  * Route to fetch all submissions for a given assignment
-    TODO: Limit fetching to an authenticated User with 'admin' role or an authenticated 'instructor User 
-    whose ID matches the instructorId of the Course corresponding to the Assignment's courseId
  */
-router.get('/:assignmentId/submissions', async function (req, res, next) {
+router.get('/:assignmentId/submissions', requireAuthentication, async function (req, res, next) {
     /*
     * Compute page number based on optional query string parameter `page`.
     * Make sure page is within allowed bounds.
@@ -113,46 +140,62 @@ router.get('/:assignmentId/submissions', async function (req, res, next) {
     const whereClause = userId ? { assignmentId, userId } : { assignmentId };
 
     try {
-        const submissions = await Submission.findAndCountAll({
-            where: whereClause,
-            limit: numPerPage,
-            offset: offset
-        })
+        // Only allows fetching if the authenticated user is the instructor of the course, or an Admin
+        const assignment = await Assignment.findByPk(assignmentId,
+            { include: Course }
+        )
 
-        if (submissions.count === 0) {
-            res.status(404).send({
-                error: "No submissions found using provided id"
-            })
+        if (!assignment) {
+            next()
             return
         }
 
-        /*
-        * Generate HATEOAS links for surrounding pages.
-        */
-        const lastPage = Math.ceil(submissions.count / numPerPage);
-        const links = {};
-        if (page < lastPage) {
-            links.nextPage = `/assignments/${assignmentId}/submissions?page=${page + 1}`;
-            links.lastPage = `/assignments/${assignmentId}/submissions?page=${lastPage}`;
-        }
-        if (page > 1) {
-            links.prevPage = `/assignments/${assignmentId}/submissions?page=${page - 1}`;
-            links.firstPage = `/assignments/${assignmentId}/submissions?page=1`;
-        }
-
-        /*
-        * Construct and send response.
-        */
-        res.status(200).send({
-            submissions: submissions.rows,
-            pageNumber: page,
-            totalPages: lastPage,
-            pageSize: numPerPage,
-            totalCount: submissions.count,
-            links: links,
-        });
-
+        const course = assignment.course
     
+        if (course && course.instructorId == req.user || req.admin) {
+            const submissions = await Submission.findAndCountAll({
+                where: whereClause,
+                limit: numPerPage,
+                offset: offset
+            })
+
+            if (submissions.count === 0) {
+                res.status(404).send({
+                    error: "No submissions found using provided id"
+                })
+                return
+            }
+
+            /*
+            * Generate HATEOAS links for surrounding pages.
+            */
+            const lastPage = Math.ceil(submissions.count / numPerPage);
+            const links = {};
+            if (page < lastPage) {
+                links.nextPage = `/assignments/${assignmentId}/submissions?page=${page + 1}`;
+                links.lastPage = `/assignments/${assignmentId}/submissions?page=${lastPage}`;
+            }
+            if (page > 1) {
+                links.prevPage = `/assignments/${assignmentId}/submissions?page=${page - 1}`;
+                links.firstPage = `/assignments/${assignmentId}/submissions?page=1`;
+            }
+
+            /*
+            * Construct and send response.
+            */
+            res.status(200).send({
+                submissions: submissions.rows,
+                pageNumber: page,
+                totalPages: lastPage,
+                pageSize: numPerPage,
+                totalCount: submissions.count,
+                links: links,
+            });
+        } else {
+            res.status(403).send({
+                error: "Not authorized to fetch submissions for the requested course"
+            })
+        }
     } catch (e) {
         next(e)
     }
@@ -160,37 +203,72 @@ router.get('/:assignmentId/submissions', async function (req, res, next) {
 
 /*
  * Route to create a new submission for an assignment
-    TODO: Limit creating to an authenticated User with 'admin' role or an authenticated 'instructor User 
-    whose ID matches the instructorId of the Course corresponding to the Assignment's courseId
  */
 router.post(
     '/:assignmentId/submissions', 
+    requireAuthentication,
     upload.single('file'),
     async function (req, res, next) {
         //console.log("== req.file:", req.file)
-        //console.log("== req.body:", req.body)
-    if (req.file) {
-        const filepath = `/media/submissions/${req.file.filename}` 
-        try {
-            // Destructuring to exclude grade field in creation
-            const { grade, ...otherFields } = req.body;
-            const submission = await Submission.create({...otherFields, file: filepath}, SubmissionClientFields)
-       
-            res.status(201).send({
-                id: submission.id,
-            })
-        } catch (e) {
-            if (e instanceof ValidationError) {
-                res.status(400).send({ error: e.message })
-            } else {
-                next(e)
+        // console.log("== req.body:", req.body)
+        if (req.file) {
+            const filepath = `/media/submissions/${req.file.filename}` 
+            try {
+                    const assignmentId = req.body.assignmentId
+                    if (assignmentId !== req.params.assignmentId) {
+                        res.status(400).send({
+                            error: "assignmentId field of the request body must match assignmentId parameter of the URL"
+                        })
+                        return
+                    }
+
+                    const assignment = await Assignment.findByPk(assignmentId)
+                    if (!assignment) {
+                        next()
+                        return
+                    }
+
+                    const userId = parseInt(req.body.userId)
+
+                    // Fetch data for the requested user, including a list of courses they are enrolled in
+                    // Limit the list of courses to match the requested assignment's courseId
+                    const student = await User.findByPk(userId, {
+                        include: {
+                            model: Course,
+                            through: {
+                                where: {
+                                    courseId: assignment.courseId
+                                }
+                            }
+                        }
+                    })
+
+                    // Only allows fetching if the authenticated user is a student of the assignment's course, or an Admin
+                    if (req.user === userId && student.courses.length > 0 || req.admin) {
+                        // Destructuring to exclude grade field in creation
+                        const { grade, ...otherFields } = req.body;
+                        const submission = await Submission.create({...otherFields, file: filepath}, SubmissionClientFields)
+                
+                        res.status(201).send({
+                            id: submission.id,
+                        })
+                    } else {
+                        res.status(403).send({
+                            error: "Not authorized to create a submission to the requested assignment for the requested user"
+                        })
+                    }
+            } catch (e) {
+                if (e instanceof ValidationError) {
+                    res.status(400).send({ error: e.message })
+                } else {
+                    next(e)
+                }
             }
+        } else {
+            res.status(400).send({
+                error: "Invalid file type"
+            })
         }
-    } else {
-        res.status(400).send({
-            error: "Invalid file type"
-        })
-    }
 })
 
 
