@@ -7,5 +7,7 @@ const { Course } = require("./course")
 // Defines a join table for M:M association 
 const UserCourse = sequelize.define('UserCourse', {})
 
-Course.belongsToMany(User, { through: UserCourse, foreignKey: { allowNull: false } })
+Course.belongsToMany(User, { through: UserCourse })
 User.belongsToMany(Course, { through: UserCourse })
+
+exports.UserCourse = UserCourse

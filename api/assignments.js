@@ -5,6 +5,8 @@ const { Submission, SubmissionClientFields } = require('../models/submission')
 const { upload } = require('../lib/multer')
 const { requireAuthentication } = require('../lib/auth')
 const { Course } = require('../models/course')
+const { User } = require('../models/user')
+const { UserCourse } = require('../models/userCourse')
 
 const router = Router()
 
@@ -142,6 +144,12 @@ router.get('/:assignmentId/submissions', requireAuthentication, async function (
         const assignment = await Assignment.findByPk(assignmentId,
             { include: Course }
         )
+
+        if (!assignment) {
+            next()
+            return
+        }
+
         const course = assignment.course
     
         if (course && course.instructorId == req.user || req.admin) {
@@ -202,18 +210,41 @@ router.post(
     upload.single('file'),
     async function (req, res, next) {
         //console.log("== req.file:", req.file)
-        //console.log("== req.body:", req.body)
+        // console.log("== req.body:", req.body)
         if (req.file) {
             const filepath = `/media/submissions/${req.file.filename}` 
             try {
                     const assignmentId = req.body.assignmentId
-                    const assignment = await Assignment.findByPk(assignmentId,
-                        { include: Course }
-                    )
-                    const course = assignment.course
+                    if (assignmentId !== req.params.assignmentId) {
+                        res.status(400).send({
+                            error: "assignmentId field of the request body must match assignmentId parameter of the URL"
+                        })
+                        return
+                    }
 
-                    // Only allows fetching if the authenticated user is the instructor of the course, or an Admin
-                    if (course && course.instructorId == req.user || req.admin) {
+                    const assignment = await Assignment.findByPk(assignmentId)
+                    if (!assignment) {
+                        next()
+                        return
+                    }
+
+                    const userId = parseInt(req.body.userId)
+
+                    // Fetch data for the requested user, including a list of courses they are enrolled in
+                    // Limit the list of courses to match the requested assignment's courseId
+                    const student = await User.findByPk(userId, {
+                        include: {
+                            model: Course,
+                            through: {
+                                where: {
+                                    courseId: assignment.courseId
+                                }
+                            }
+                        }
+                    })
+
+                    // Only allows fetching if the authenticated user is a student of the assignment's course, or an Admin
+                    if (req.user === userId && student.courses.length > 0 || req.admin) {
                         // Destructuring to exclude grade field in creation
                         const { grade, ...otherFields } = req.body;
                         const submission = await Submission.create({...otherFields, file: filepath}, SubmissionClientFields)
@@ -223,7 +254,7 @@ router.post(
                         })
                     } else {
                         res.status(403).send({
-                            error: "Not authorized to create a submission for the requested course"
+                            error: "Not authorized to create a submission to the requested assignment for the requested user"
                         })
                     }
             } catch (e) {
