@@ -10,7 +10,7 @@ const app = express()
 const port = process.env.PORT || 8000
 
 const redis = require('redis')
-const { requireAuthentication } = require('./lib/auth')
+const { checkAuthentication } = require('./lib/auth')
 const redisHost = process.env.REDIS_HOST || "localhost"
 const redisPort = process.env.REDIS_PORT || 6379
 
@@ -23,11 +23,7 @@ const rateLimitMaxReqsAuthorized = 30
 const rateLimitWindowMs = 60000
 
 async function rateLimit(req, res, next) {
-  const properAuth = false
-  const authHeader = req.get("Authorization") || ""
-  if (authHeader) {
-    properAuth = await requireAuthentication(req, res)
-  }
+  const properAuth = checkAuthentication(req)
 
   const maxRequests = properAuth ? rateLimitMaxReqsAuthorized : rateLimitMaxReqsUnauthorized
 
@@ -65,7 +61,7 @@ async function rateLimit(req, res, next) {
     next()
   } else {
     res.status(429).send({
-      err: "Too many requests per minute"
+      error: "Too many requests per minute"
     })
   }
 }
