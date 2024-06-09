@@ -93,9 +93,9 @@ router.delete('/:assignmentId', requireAuthentication, async function (req, res,
     const assignmentId = req.params.assignmentId
 
     try {
-        const assignment = await Assignment.findByPk(assignmentId,
-            { include: Course }
-        )
+        const assignment = await Assignment.findByPk(assignmentId, {
+            include: Course
+        })
         const course = assignment.course
     
         if (course && course.instructorId == req.user || req.admin) {
@@ -141,9 +141,9 @@ router.get('/:assignmentId/submissions', requireAuthentication, async function (
 
     try {
         // Only allows fetching if the authenticated user is the instructor of the course, or an Admin
-        const assignment = await Assignment.findByPk(assignmentId,
-            { include: Course }
-        )
+        const assignment = await Assignment.findByPk(assignmentId, {
+            include: Course
+        })
 
         if (!assignment) {
             next()

@@ -14,9 +14,22 @@ router.patch('/:submissionId', requireAuthentication, async function (req, res, 
     const submissionId = req.params.submissionId
     try {
         const assignmentId = req.body.assignmentId
-        const assignment = await Assignment.findByPk(submissionId, 
-            {include: Course}
-        )
+        if (assignmentId !== req.params.assignmentId) {
+            res.status(400).send({
+                error: "assignmentId field of the request body must match assignmentId parameter of the URL"
+            })
+            return
+        }
+
+        const assignment = await Assignment.findByPk(submissionId, {
+            include: Course
+        })
+
+        if (!assignment) {
+            next()
+            return
+        }
+
         const course = assignment.course
 
         // Only allows patching if the authenticated user is the instructor of the course, or an Admin
@@ -35,7 +48,7 @@ router.patch('/:submissionId', requireAuthentication, async function (req, res, 
             }
         } else {
             res.status(403).send({
-                error: "Not authorized to update a submission for the requested course"
+                error: "Not authorized to update the requested submission"
             })
         }
     } catch (e) {
