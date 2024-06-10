@@ -7,6 +7,7 @@ const { Assignment } = require('../models/assignment')
 const { requireAuthentication } = require("../lib/auth")
 const { getChannel, queueName } = require("../lib/rabbitmq")
 const { generateFilename } = require("../lib/multer")
+const path = require('node:path')
 const fs = require('fs')
 
 const router = Router()
