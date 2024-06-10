@@ -1,5 +1,6 @@
 node_modules/
 lib/uploads
+lib/rosters
 data/
 initDB.js
 *.env

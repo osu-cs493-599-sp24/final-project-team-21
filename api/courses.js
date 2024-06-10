@@ -5,6 +5,9 @@ const { Course, CourseClientFields } = require("../models/course")
 const { User } = require('../models/user')
 const { Assignment } = require('../models/assignment')
 const { requireAuthentication } = require("../lib/auth")
+const { getChannel, queueName } = require("../lib/rabbitmq")
+const { generateFilename } = require("../lib/multer")
+const fs = require('fs')
 
 const router = Router()
 
@@ -195,13 +198,63 @@ router.get('/:courseId/students', requireAuthentication, async function (req, re
 })
 
 // Update enrollment for a course
-router.post("/:courseId/students", async function (req, res, next) {
-
+router.post("/:courseId/students", requireAuthentication, async function (req, res, next) {
+  const courseId = parseInt(req.params.courseId)
+  try {
+    const course = await Course.findByPk(courseId)
+    if ((course && course.instructorId === req.user) || req.admin) {
+      if (req && req.body.add && req.body.remove) {
+        // Generate offline work
+        const channel = getChannel()
+        channel.sendToQueue(queueName, Buffer.from(JSON.stringify({
+          id: courseId,
+          add: req.body.add,
+          remove: req.body.remove
+        })))
+        res.status(202).send()
+      } else {
+        res.status(400).send({
+          error: "Invalid request body"
+        })
+      }
+    } else {
+      res.status(403).send({
+        error: "Not authorized to update course enrollment"
+      })
+    } 
+  } catch (e) {
+    next(e)
+  }
 })
 
 // Fetch a CSV file listing the students enrolled in a course
-router.get("/:courseId/roster", async function (req, res, next) {
-
+router.get("/:courseId/roster", requireAuthentication, async function (req, res, next) {
+  const courseId = parseInt(req.params.courseId)
+  try {
+    const course = await Course.findByPk(courseId)
+    if ((course && course.instructorId === req.user) || req.admin) {
+      if (course) {
+        const filename = `${generateFilename(courseId)}.csv`
+        const filePath = path.join(__dirname, "../lib/rosters", filename)
+        if (fs.existsSync(filePath)) {
+          res.download(filePath)
+        } else {
+          res.status(404).send({
+            error: "Course exists but roster does not exist"
+          })
+        }
+        res.download(filePath)
+      } else {
+        next()
+      }      
+    } else {
+      res.status(403).send({
+        error: "Not authorized to download the course roster"
+      })
+    }
+  } catch (e) {
+    next(e)
+  }
 })
 
 // Fetch the list of assignments for a course
