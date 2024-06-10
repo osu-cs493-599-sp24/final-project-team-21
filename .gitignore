@@ -1,3 +1,5 @@
 node_modules/
-*.env
 lib/uploads
+data/
+initDB.js
+*.env
