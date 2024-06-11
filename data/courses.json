@@ -1,0 +1,156 @@
+[
+    {
+        "subject": "CS",
+        "number": "261",
+        "title": "Data Structures",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "290",
+        "title": "Web Development",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "492",
+        "title": "Senior Project",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "261",
+        "title": "Data Structures",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "290",
+        "title": "Web Development",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "492",
+        "title": "Senior Project",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "MTH",
+        "number": "251",
+        "title": "Calculus I",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "MTH",
+        "number": "252",
+        "title": "Calculus II",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "MTH",
+        "number": "251",
+        "title": "Calculus I",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "MTH",
+        "number": "252",
+        "title": "Calculus II",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "ENGR",
+        "number": "101",
+        "title": "Introduction to Engineering",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "ENGR",
+        "number": "101",
+        "title": "Introduction to Engineering",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "340",
+        "title": "Introduction to Databases",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "340",
+        "title": "Introduction to Databases",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "360",
+        "title": "Computer Systems",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "360",
+        "title": "Computer Systems",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "372",
+        "title": "Introduction to Networks",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "372",
+        "title": "Introduction to Networks",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "362",
+        "title": "Software Engineering",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "362",
+        "title": "Software Engineering",
+        "term": "s22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "381",
+        "title": "Programming Languages",
+        "term": "w22",
+        "instructorId": 2
+    },
+    {
+        "subject": "CS",
+        "number": "381",
+        "title": "Programming Languages",
+        "term": "s22",
+        "instructorId": 2
+    }
+]
