@@ -17,7 +17,7 @@ const router = Router()
 */
 
 // Create a new course
-router.post("/", requireAuthentication, async (req, res) => {
+router.post("/", requireAuthentication, async (req, res, next) => {
   try {
     if (req.admin) {
       const course = await Course.create(req.body, CourseClientFields)
@@ -175,18 +175,24 @@ router.get('/:courseId/students', requireAuthentication, async function (req, re
   const courseId = parseInt(req.params.courseId)
   try {
     const course = await Course.findByPk(courseId)
-    if ((course && course.instructorId === req.user) || req.admin) {
-      const result = await Course.findByPk(courseId, {
-        include: {
-          model: User,
-          where: { role: "student" }
-        }
+    if (!course) {
+      next()
+      return
+    }
+
+    if (course.instructorId === req.user || req.admin) {
+      // Use lazy loading to avoid ambiguity with the instructor association
+      const result = await course.getUsers({
+        where: { role: "student" }
       })
       if (result) {
-        const students = result.Users
-        res.status(200).send({ students: students })
+        // Filter attributes to return
+        const students = result.map(({id, name, email, password, role}) => ({id, name, email, password, role}))
+        res.status(200).send({ students })
       } else {
-        next()
+        res.status(404).send({
+          error: "No students found for the requested course"
+        })
       }
     } else {
       res.status(403).send({
@@ -233,24 +239,24 @@ router.get("/:courseId/roster", requireAuthentication, async function (req, res,
   const courseId = parseInt(req.params.courseId)
   try {
     const course = await Course.findByPk(courseId)
-    if ((course && course.instructorId === req.user) || req.admin) {
-      if (course) {
-        const filename = `${generateFilename(courseId)}.csv`
-        const filePath = path.join(__dirname, "../lib/rosters", filename)
-        if (fs.existsSync(filePath)) {
-          res.download(filePath)
-        } else {
-          res.status(404).send({
-            error: "Course exists but roster does not exist"
-          })
-        }
+    if (!course) {
+      next()
+      return
+    }
+
+    if (course.instructorId === req.user || req.admin) {
+      const filename = `${generateFilename(courseId)}.csv`
+      const filePath = path.join(__dirname, "../lib/rosters", filename)
+      if (fs.existsSync(filePath)) {
         res.download(filePath)
       } else {
-        next()
-      }      
+        res.status(404).send({
+          error: "No roster found for the requested course"
+        })
+      }
     } else {
       res.status(403).send({
-        error: "Not authorized to download the course roster"
+        error: "Not authorized to download the requested course roster"
       })
     }
   } catch (e) {
