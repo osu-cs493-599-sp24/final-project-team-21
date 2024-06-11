@@ -3,6 +3,7 @@ const { ValidationError } = require("sequelize")
 
 const { Course, CourseClientFields } = require("../models/course")
 const { User } = require('../models/user')
+const { UserCourse } = require('../models/userCourse')
 const { Assignment } = require('../models/assignment')
 const { requireAuthentication } = require("../lib/auth")
 const { getChannel, queueName } = require("../lib/rabbitmq")
@@ -125,7 +126,11 @@ router.patch("/:courseId", requireAuthentication, async (req, res, next) => {
   const courseId = parseInt(req.params.courseId)
   try {
     const course = await Course.findByPk(courseId)
-    if ((course && course.instructorId === req.user) || req.admin) {
+    if (!course) {
+      next()
+      return
+    }
+    if (course.instructorId === req.user || req.admin) {
       const result = await Course.update(req.body, {
         where: { id: courseId },
         fields: CourseClientFields
@@ -209,16 +214,19 @@ router.post("/:courseId/students", requireAuthentication, async function (req, r
   const courseId = parseInt(req.params.courseId)
   try {
     const course = await Course.findByPk(courseId)
-    if ((course && course.instructorId === req.user) || req.admin) {
+    if (!course) {
+      next()
+      return
+    }
+    if (course.instructorId === req.user || req.admin) {
       if (req && req.body.add && req.body.remove) {
+        const enrollments = req.body.add.map(userId => ({ userId, courseId }))
+        await UserCourse.bulkCreate(enrollments, { ignoreDuplicates: true })
+        await UserCourse.destroy({ where: { courseId: courseId, userId: req.body.remove } })
         // Generate offline work
         const channel = getChannel()
-        channel.sendToQueue(queueName, Buffer.from(JSON.stringify({
-          id: courseId,
-          add: req.body.add,
-          remove: req.body.remove
-        })))
-        res.status(202).send()
+        channel.sendToQueue(queueName, Buffer.from(courseId.toString()))
+        res.status(200).send()
       } else {
         res.status(400).send({
           error: "Invalid request body"
