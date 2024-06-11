@@ -5,6 +5,7 @@ const morgan = require('morgan')
 
 const api = require('./api')
 const sequelize = require('./lib/sequelize')
+const { connectToRabbitMQ } = require('./lib/rabbitmq')
 
 const app = express()
 const port = process.env.PORT || 8000
@@ -107,7 +108,8 @@ app.use('*', function (req, res, next) {
    * to the MySQL server.
    */
   sequelize.sync().then(function () {
-    redisClient.connect().then(() => {
+    redisClient.connect().then(async () => {
+      await connectToRabbitMQ()
       app.listen(port, () => {
         console.log("== Server is running on port", port);
       });

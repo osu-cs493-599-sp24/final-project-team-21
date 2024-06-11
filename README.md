@@ -3,6 +3,8 @@
 `docker run -d --name mysqlserver -p 3306:3306 -e "MYSQL_RANDOM_ROOT_PASSWORD=yes" -e "MYSQL_DATABASE=tarpaulin" -e "MYSQL_USER=**\<username>**" -e "MYSQL_PASSWORD=**\<password>**" mysql`
 ## Run the Redis container for rate limit caching
 `docker run -d --name redis-container -p 6379:6379 redis`
+## Run the RabbitMQ container for offline work
+`docker run -d --name rabbitmq-server -p "5672:5672" -p "15672:15672" rabbitmq:management`
 ## Add the following fields to your .env file
 <ul>
     <li>MYSQL_DATABASE</li>
